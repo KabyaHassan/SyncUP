@@ -1,0 +1,98 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Admin Control Panel</h2>
+        <div class="px-3 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-bold uppercase tracking-wider">Superuser Access</div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase">System Status</h3>
+            <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span class="text-lg font-bold">All Systems Operational</span>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase">Database Version</h3>
+            <span class="text-lg font-bold">MariaDB 10.x / MySQL 8.0</span>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase">Security Level</h3>
+            <span class="text-lg font-bold">PDO Protected</span>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="font-bold text-gray-900 dark:text-white">User Role Management</h3>
+            <button onclick="loadUsers()" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">User ID</th>
+                        <th class="px-6 py-3">Full Name</th>
+                        <th class="px-6 py-3">Role</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-user-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadUsers() {
+    const list = document.getElementById('admin-user-list');
+    list.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 italic">Loading users...</td></tr>';
+    
+    const data = await apiCall('/api/student/read.php?type=all');
+    if (data.success) {
+        list.innerHTML = data.data.map(u => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="px-6 py-4 font-mono">${u.student_id}</td>
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${u.name}</td>
+                <td class="px-6 py-4">
+                    <span class="px-2 py-1 rounded text-xs font-bold ${u.role === 'Admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'}">
+                        ${u.role || 'Student'}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <button onclick="toggleUserRole('${u.student_id}', '${u.role}')" class="text-primary-600 hover:underline text-xs font-semibold">Change Role</button>
+                </td>
+            </tr>
+        `).join('');
+    } else {
+        list.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Failed to load data.</td></tr>';
+    }
+}
+
+async function toggleUserRole(id, currentRole) {
+    const newRole = currentRole === 'Admin' ? 'Student' : 'Admin';
+    if (!await customConfirm(\`Promote/Demote ${id} to ${newRole}?\`)) return;
+
+    const formData = new FormData();
+    formData.append('student_id', id);
+    formData.append('role', newRole);
+
+    const data = await apiCall('/api/student/update.php', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (data.success) {
+        showToast(data.message, 'success');
+        loadUsers();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+loadUsers();
+lucide.createIcons();
+</script>

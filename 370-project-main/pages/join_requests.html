@@ -1,0 +1,160 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Join Requests</h2>
+        <button onclick="document.getElementById('add-request-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Send Request
+        </button>
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="loadRequests('join')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center" title="JOIN Query">
+            <i data-lucide="link" class="w-4 h-4 mr-2"></i> View with Names
+        </button>
+        <button onclick="loadRequests('all')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center">
+            <i data-lucide="list" class="w-4 h-4 mr-2"></i> Request Log
+        </button>
+        <div class="flex items-center gap-2">
+            <select id="admin-groups-filter" onchange="loadRequests('nested', this.value)" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Filter by My Managed Groups...</option>
+            </select>
+            <button onclick="document.getElementById('admin-groups-filter').value=''; loadRequests('join')" class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Student</th>
+                        <th class="px-6 py-3">Group</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="request-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="add-request-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Send Join Request</h3>
+            <button onclick="document.getElementById('add-request-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form onsubmit="handleFormSubmit(event, '/api/joinRequest/create.php', () => { document.getElementById('add-request-modal').classList.add('hidden'); loadRequests(); })" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                <input type="text" name="student_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group ID</label>
+                <input type="number" name="group_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('add-request-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors">Send Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function loadRequests(type = 'join', filter = '') {
+    const list = document.getElementById('request-list');
+    const head = document.getElementById('table-head');
+    
+    const groupSelect = document.getElementById('admin-groups-filter');
+    if (groupSelect && groupSelect.options.length <= 1 && currentUser && currentUser.admin_groups) {
+        currentUser.admin_groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.group_id;
+            opt.textContent = g.group_name;
+            groupSelect.appendChild(opt);
+        });
+    }
+
+    list.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/joinRequest/read.php?type=${type}&filter=${filter}`);
+    
+    if (data.success) {
+        if (type === 'join' || type === 'nested') {
+            head.innerHTML = `
+                <th class="px-6 py-3">Req ID</th>
+                <th class="px-6 py-3">Student Name</th>
+                <th class="px-6 py-3">Group Name</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(r => `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4">${r.request_id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${r.student_name || 'N/A'}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${r.group_name}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs ${r.status==='Accepted'?'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400':(r.status==='Rejected'?'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400':'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400')}">${r.status}</span></td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        ${r.status === 'Pending' ? `
+                        <button onclick="updateStatus('${r.request_id}', 'Accepted')" class="text-green-600 hover:text-green-800" title="Accept"><i data-lucide="check" class="w-4 h-4"></i></button>
+                        <button onclick="updateStatus('${r.request_id}', 'Rejected')" class="text-red-600 hover:text-red-800" title="Reject"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        ` : ''}
+                        <button onclick="deleteRequest('${r.request_id}')" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" class="px-6 py-4 text-center">No requests found</td></tr>';
+        } else {
+            head.innerHTML = `
+                <th class="px-6 py-3">Req ID</th>
+                <th class="px-6 py-3">Student ID</th>
+                <th class="px-6 py-3">Group ID</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(r => `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4">${r.request_id}</td>
+                    <td class="px-6 py-4">${r.student_id}</td>
+                    <td class="px-6 py-4">${r.group_id}</td>
+                    <td class="px-6 py-4">${r.status}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteRequest('${r.request_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No requests found</td></tr>';
+        }
+        lucide.createIcons();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function updateStatus(id, status) {
+    const formData = new FormData();
+    formData.append('request_id', id);
+    formData.append('status', status);
+
+    const data = await apiCall('/api/joinRequest/update.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadRequests(); }
+    else showToast(data.message, 'error');
+}
+
+async function deleteRequest(id) {
+    if (!await customConfirm('Are you sure you want to delete this request?')) return;
+    const formData = new FormData();
+    formData.append('request_id', id);
+    const data = await apiCall('/api/joinRequest/delete.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadRequests(); }
+    else showToast(data.message, 'error');
+}
+
+loadRequests();
+</script>

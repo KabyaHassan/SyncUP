@@ -1,0 +1,313 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Study Groups</h2>
+        <button onclick="openCreateGroupModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Create Group
+        </button>
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="loadGroups('all')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            All Groups
+        </button>
+        <div class="flex items-center gap-2">
+            <select id="my-groups-filter" onchange="loadGroups('nested', this.value)" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Filter by My Groups...</option>
+            </select>
+            <button onclick="document.getElementById('my-groups-filter').value=''; loadGroups('all')" class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Group Name</th>
+                        <th class="px-6 py-3">Visibility</th>
+                        <th class="px-6 py-3">Course Code</th>
+                        <th class="px-6 py-3">Created By</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="group-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="add-group-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Create Study Group</h3>
+            <button onclick="document.getElementById('add-group-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form onsubmit="submitGroup(event)" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group Name</label>
+                <input type="text" name="group_name" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Visibility</label>
+                <select name="visibility" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="Public">Public</option>
+                    <option value="Private">Private</option>
+                </select>
+            </div>
+            <div id="course-selection-div">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Course</label>
+                    <button type="button" onclick="toggleCourseMode(true)" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">+ New Course</button>
+                </div>
+                <select id="course-select" name="course_code" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="">Select a Course...</option>
+                </select>
+            </div>
+            
+            <div id="course-creation-div" class="hidden space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300">Create New Course</h4>
+                    <button type="button" onclick="toggleCourseMode(false)" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Course Code</label>
+                    <input type="text" id="new-course-code" placeholder="e.g. CSE101" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Course Name</label>
+                    <input type="text" id="new-course-name" placeholder="e.g. Intro to Computer Science" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+                </div>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('add-group-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors">Save Group</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let isCreatingCourse = false;
+
+function toggleCourseMode(creating) {
+    isCreatingCourse = creating;
+    document.getElementById('course-selection-div').classList.toggle('hidden', creating);
+    document.getElementById('course-creation-div').classList.toggle('hidden', !creating);
+    
+    document.getElementById('course-select').required = !creating;
+    document.getElementById('new-course-code').required = creating;
+    document.getElementById('new-course-name').required = creating;
+}
+
+async function openCreateGroupModal() {
+    document.getElementById('add-group-modal').classList.remove('hidden');
+    toggleCourseMode(false);
+    
+    const select = document.getElementById('course-select');
+    select.innerHTML = '<option value="">Loading courses...</option>';
+    const data = await apiCall('/api/course/read.php');
+    if (data.success) {
+        select.innerHTML = '<option value="">Select a Course...</option>' + 
+            data.data.map(c => `<option value="${c.course_code}">${c.course_code} - ${c.course_name}</option>`).join('');
+    } else {
+        select.innerHTML = '<option value="">Error loading courses</option>';
+    }
+}
+
+async function submitGroup(event) {
+    event.preventDefault();
+    const form = event.target;
+    
+    if (isCreatingCourse) {
+        const cCode = document.getElementById('new-course-code').value.trim();
+        const cName = document.getElementById('new-course-name').value.trim();
+        
+        const courseData = new FormData();
+        courseData.append('course_code', cCode);
+        courseData.append('course_name', cName);
+        
+        const courseRes = await apiCall('/api/course/create.php', { method: 'POST', body: courseData });
+        if (!courseRes.success) {
+            return showToast('Failed to create course: ' + courseRes.message, 'error');
+        }
+        
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'course_code';
+        hiddenInput.value = cCode;
+        form.appendChild(hiddenInput);
+    }
+    
+    const formData = new FormData(form);
+    
+    const data = await apiCall('/api/group/create.php', { method: 'POST', body: formData });
+    if (data.success) {
+        showToast(data.message, 'success');
+        document.getElementById('add-group-modal').classList.add('hidden');
+        form.reset();
+        
+        const session = await apiCall('/api/auth/session.php');
+        if (session.success) currentUser = session.user;
+        loadGroups();
+    } else {
+        showToast(data.message, 'error');
+    }
+    
+    const hidden = form.querySelector('input[type="hidden"][name="course_code"]');
+    if (hidden) hidden.remove();
+}
+
+async function loadGroups(type = 'all', filter = '') {
+    const list = document.getElementById('group-list');
+    const head = document.getElementById('table-head');
+    
+    const groupSelect = document.getElementById('my-groups-filter');
+    if (groupSelect && groupSelect.options.length <= 1 && currentUser && currentUser.enrolled_groups) {
+        currentUser.enrolled_groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.group_id;
+            opt.textContent = g.group_name;
+            groupSelect.appendChild(opt);
+        });
+    }
+
+    list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/group/read.php?type=${type}&filter=${filter}`);
+    
+    if (data.success) {
+        if (type === 'join') {
+            head.innerHTML = `
+                <th class="px-6 py-3">Group Name</th>
+                <th class="px-6 py-3">Course Name</th>
+                <th class="px-6 py-3">Join Status</th>
+            `;
+            list.innerHTML = data.data.map(g => `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                        <button onclick="enterGroup('${g.group_id}')" class="hover:text-blue-600 hover:underline transition-colors text-left">${g.group_name}</button>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${g.course_name}</td>
+                    <td class="px-6 py-4">
+                        ${g.user_role ? `<span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded text-xs font-medium">${g.user_role}</span>` : 
+                        `<button onclick="requestJoin('${g.group_id}')" class="text-blue-600 hover:underline text-xs font-medium">Join Group</button>`}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" class="px-6 py-4 text-center">No groups found</td></tr>';
+        } else {
+            head.innerHTML = `
+                <th class="px-6 py-3">ID</th>
+                <th class="px-6 py-3">Group Name</th>
+                <th class="px-6 py-3">Visibility</th>
+                <th class="px-6 py-3">Course Code</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(g => {
+                const canManage = isGroupAdmin(g.group_id);
+                
+                return `
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4">${g.group_id}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            <button onclick="enterGroup('${g.group_id}')" class="hover:text-blue-600 hover:underline transition-colors text-left">${g.group_name}</button>
+                        </td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">${g.visibility}</span></td>
+                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${g.course_code}</td>
+                        <td class="px-6 py-4">
+                            ${g.user_role ? `<span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded text-xs font-medium">${g.user_role}</span>` : 
+                            `<button onclick="requestJoin('${g.group_id}')" class="text-blue-600 hover:underline text-xs font-medium">Join Group</button>`}
+                        </td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            ${canManage ? `
+                                <button onclick="promptUpdateGroup('${g.group_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                <button onclick="deleteGroup('${g.group_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            ` : (g.user_role ? `<button onclick="leaveGroup('${g.group_id}', '${g.group_name}')" class="text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300 text-xs font-medium" title="Leave Group\"><i data-lucide="log-out" class="w-4 h-4 inline mr-1\"></i>Leave</button>` : '<span class="text-xs text-gray-400 italic">View Only</span>')}
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No groups found</td></tr>';
+            lucide.createIcons();
+        }
+    } else {
+        showToast(data.message, 'error');
+        list.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading data</td></tr>';
+    }
+}
+
+async function requestJoin(groupId) {
+    if (!currentUser) return showToast('Please login first', 'error');
+    const formData = new FormData();
+    formData.append('student_id', currentUser.student_id);
+    formData.append('group_id', groupId);
+
+    const data = await apiCall('/api/joinRequest/create.php', { method: 'POST', body: formData });
+    if (data.success) {
+        showToast(data.message, 'success');
+        const session = await apiCall('/api/auth/session.php');
+        if (session.success) currentUser = session.user;
+        loadGroups();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function promptUpdateGroup(id) {
+    const newName = await customPrompt("Enter new Group Name (leave blank to keep current):");
+    const newVisibility = await customPrompt("Enter new Visibility (Public or Private - leave blank to keep current):");
+    
+    if (newName === null && newVisibility === null) return;
+
+    const formData = new FormData();
+    formData.append('group_id', id);
+    if (newName) formData.append('group_name', newName);
+    if (newVisibility) formData.append('visibility', newVisibility);
+
+    const data = await apiCall('/api/group/update.php', { method: 'POST', body: formData });
+    if (data.success) {
+        showToast(data.message, 'success');
+        const session = await apiCall('/api/auth/session.php');
+        if (session.success) currentUser = session.user;
+        loadGroups();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function deleteGroup(id) {
+    if (!await customConfirm('Are you sure you want to delete this group?')) return;
+    const formData = new FormData();
+    formData.append('group_id', id);
+    const data = await apiCall('/api/group/delete.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadGroups(); }
+    else showToast(data.message, 'error');
+}
+
+async function leaveGroup(groupId, groupName) {
+    if (!currentUser) return showToast('Please login first', 'error');
+    if (!await customConfirm(`Are you sure you want to leave "${groupName}"?`)) return;
+    
+    const formData = new FormData();
+    formData.append('member_id', currentUser.student_id);
+    formData.append('group_id', groupId);
+    
+    const data = await apiCall('/api/member/delete.php', { method: 'POST', body: formData });
+    if (data.success) { 
+        showToast(data.message, 'success');
+        const session = await apiCall('/api/auth/session.php');
+        if (session.success) currentUser = session.user;
+        loadGroups();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+loadGroups();
+</script>

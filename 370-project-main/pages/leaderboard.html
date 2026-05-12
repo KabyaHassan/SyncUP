@@ -1,0 +1,118 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Leaderboard System</h2>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-900/30 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
+        <div class="flex flex-wrap gap-2">
+            <button onclick="loadLeaderboard('join')" class="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200 hover:shadow-md transition-all">
+                <i data-lucide="globe" class="w-4 h-4 mr-2 text-blue-500"></i> Global
+            </button>
+            <button onclick="loadLeaderboard('all')" class="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200 hover:shadow-md transition-all">
+                <i data-lucide="award" class="w-4 h-4 mr-2 text-purple-500"></i> View Tiers
+            </button>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <div class="relative group">
+                <select id="my-groups-filter-lead" onchange="loadLeaderboard('nested', this.value)" 
+                    class="appearance-none pl-10 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all cursor-pointer min-w-[220px]">
+                    <option value="">Filter by My Groups...</option>
+                </select>
+                <i data-lucide="users" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors pointer-events-none"></i>
+            </div>
+            <button onclick="loadLeaderboard('nested', document.getElementById('my-groups-filter-lead').value)" 
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition-all">
+                Rankings
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                    <tr id="table-head">
+                        <th class="px-8 py-5">Rank</th>
+                        <th class="px-8 py-5">Student</th>
+                        <th class="px-8 py-5">Points</th>
+                        <th class="px-8 py-5">Tier</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-list" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadLeaderboard(type = 'join', filter = '1') {
+    const list = document.getElementById('leaderboard-list');
+    const head = document.getElementById('table-head');
+    
+    await populateMyGroupsDropdown('my-groups-filter-lead', filter);
+
+    list.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/leaderboard/read.php?type=${type}&filter=${filter}`);
+    
+    if (data.success) {
+        if (type === 'join' || type === 'all') {
+            head.innerHTML = `
+                <th class="px-8 py-5 text-gray-500 font-semibold">Rank</th>
+                <th class="px-8 py-5 text-gray-500 font-semibold">Student</th>
+                <th class="px-8 py-5 text-gray-500 font-semibold">Points</th>
+                <th class="px-8 py-5 text-gray-500 font-semibold">Tier</th>
+            `;
+            list.innerHTML = data.data.map((l, idx) => {
+                const points = parseInt(l.total_points);
+                const tier = points >= 100 ? 'Expert' : points >= 50 ? 'Advanced' : 'Beginner';
+                const tierBg = points >= 100 ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : points >= 50 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400';
+                
+                return `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td class="px-8 py-5 font-bold ${idx===0?'text-yellow-500':idx===1?'text-gray-400':idx===2?'text-amber-600':'text-gray-400'}">
+                            #${idx + 1}
+                        </td>
+                        <td class="px-8 py-5">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold mr-3 text-xs">
+                                    ${l.name.split(' ').map(n=>n[0]).join('')}
+                                </div>
+                                <span class="font-medium text-gray-900 dark:text-white">${l.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5 font-mono font-bold text-gray-900 dark:text-white text-lg">${l.total_points}</td>
+                        <td class="px-8 py-5">
+                            <span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold ${tierBg}">
+                                ${tier}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="4" class="px-8 py-10 text-center text-gray-400">No rankings found</td></tr>';
+        } else if (type === 'nested') {
+            head.innerHTML = `
+                <th class="px-8 py-5 text-gray-500 font-semibold">Rank</th>
+                <th class="px-8 py-5 text-gray-500 font-semibold">Student</th>
+                <th class="px-8 py-5 text-gray-500 font-semibold">Group Points</th>
+            `;
+            list.innerHTML = data.data.map((l, idx) => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <td class="px-8 py-5 font-bold text-gray-400">#${idx + 1}</td>
+                    <td class="px-8 py-5 font-medium text-gray-900 dark:text-white">${l.name}</td>
+                    <td class="px-8 py-5 font-mono font-bold text-blue-600 dark:text-blue-400">${l.total_points}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" class="px-8 py-10 text-center text-gray-400">No group data found</td></tr>';
+        }
+        lucide.createIcons();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+loadLeaderboard();
+</script>

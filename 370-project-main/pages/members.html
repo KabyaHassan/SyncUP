@@ -1,0 +1,161 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Group Members</h2>
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="loadMembers('join')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center" title="JOIN Query">
+            <i data-lucide="link" class="w-4 h-4 mr-2"></i> View with Names
+        </button>
+        <div class="flex items-center gap-2">
+            <select id="my-groups-filter-mem" onchange="globalGroupIdFilter=this.value; loadMembers('nested', this.value)" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[180px]">
+                <option value="">Filter by My Groups...</option>
+            </select>
+            <button onclick="globalGroupIdFilter=null; document.getElementById('my-groups-filter-mem').value=''; loadMembers('all')" class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">Member ID</th>
+                        <th class="px-6 py-3">Group ID</th>
+                        <th class="px-6 py-3">Name</th>
+                        <th class="px-6 py-3">Role</th>
+                        <th class="px-6 py-3">Points</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="member-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="add-member-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Member</h3>
+            <button onclick="document.getElementById('add-member-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form onsubmit="handleFormSubmit(event, '/api/member/create.php', () => { document.getElementById('add-member-modal').classList.add('hidden'); loadMembers(); })" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                <input type="text" name="student_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group</label>
+                <select id="add-member-group" name="group_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="">Select Group...</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('add-member-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors">Add Member</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function loadMembers(type = 'all', filter = '') {
+    const list = document.getElementById('member-list');
+    const head = document.getElementById('table-head');
+    
+    if (globalGroupIdFilter && type === 'all') {
+        type = 'nested';
+        filter = globalGroupIdFilter;
+    }
+
+    await populateMyGroupsDropdown('my-groups-filter-mem', filter);
+
+    list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/member/read.php?type=${type}&filter=${filter}`);
+    
+    if (data.success) {
+        head.innerHTML = `
+            <th class="px-6 py-3">Student ID</th>
+            <th class="px-6 py-3">Group</th>
+            <th class="px-6 py-3">Name</th>
+            <th class="px-6 py-3">Role</th>
+            <th class="px-6 py-3 text-right">Actions</th>
+        `;
+        list.innerHTML = data.data.map(m => {
+            const isAdmin = isGroupAdmin(m.group_id);
+            const isCurrentUser = currentUser && m.student_id === currentUser.student_id;
+            return `
+            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="px-6 py-4">${m.student_id}</td>
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${m.group_name || 'N/A'}</td>
+                <td class="px-6 py-4">${m.name || 'N/A'}</td>
+                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs ${m.role==='Admin'?'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400':'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}">${m.role}</span></td>
+                <td class="px-6 py-4 text-right space-x-2">
+                    ${isAdmin ? `
+                    <button onclick="promptRoleUpdate('${m.student_id}', '${m.group_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Change Role"><i data-lucide="shield" class="w-4 h-4"></i></button>
+                    <button onclick="deleteMember('${m.student_id}', '${m.group_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    ` : (isCurrentUser ? `<button onclick="leaveMemberGroup('${m.student_id}', '${m.group_id}', '${m.group_name}')" class="text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300 text-xs font-medium" title="Leave Group"><i data-lucide="log-out" class="w-4 h-4 inline mr-1"></i>Leave</button>` : '<span class="text-xs text-gray-400 italic">View Only</span>')}
+                </td>
+            </tr>
+        `}).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center">No members found</td></tr>';
+        lucide.createIcons();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function promptRoleUpdate(id, groupId) {
+    const role = await customPrompt("Enter new role (Admin or General Member):");
+    if (!role) return;
+    if (role !== 'Admin' && role !== 'General Member') {
+        showToast('Role must be Admin or General Member', 'error'); return;
+    }
+
+    const formData = new FormData();
+    formData.append('member_id', id);
+    formData.append('group_id', groupId);
+    formData.append('role', role);
+
+    const data = await apiCall('/api/member/update.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadMembers(); }
+    else showToast(data.message, 'error');
+}
+
+async function deleteMember(id, groupId) {
+    if (!await customConfirm('Are you sure you want to remove this member?')) return;
+    const formData = new FormData();
+    formData.append('member_id', id);
+    formData.append('group_id', groupId);
+    const data = await apiCall('/api/member/delete.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadMembers(); }
+    else showToast(data.message, 'error');
+}
+
+async function leaveMemberGroup(memberId, groupId, groupName) {
+    if (!await customConfirm(`Are you sure you want to leave "${groupName}"?`)) return;
+    
+    const formData = new FormData();
+    formData.append('member_id', memberId);
+    formData.append('group_id', groupId);
+    
+    const data = await apiCall('/api/member/delete.php', { method: 'POST', body: formData });
+    if (data.success) { 
+        showToast(data.message, 'success');
+        const session = await apiCall('/api/auth/session.php');
+        if (session.success) currentUser = session.user;
+        loadMembers();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+loadMembers();
+</script>

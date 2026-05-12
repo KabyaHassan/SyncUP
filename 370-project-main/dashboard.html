@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncUP Dashboard</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; style-src * 'unsafe-inline';">
+    <script src="assets/js/vendor/tailwindcss.js"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <script src="assets/js/vendor/lucide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
+
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 p-4">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur rounded-2xl mb-4">
+                    <i data-lucide="book-open" class="w-8 h-8 text-white"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-white">SyncUP</h1>
+                <p class="text-blue-200 mt-1">Sign in to your dashboard</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden relative grid">
+                <div id="login-form-container" class="p-8 transition-transform duration-300 transform translate-x-0 col-start-1 row-start-1">
+                    <form id="login-form" class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                            <input type="text" id="login-id" required placeholder="e.g. 2021001"
+                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                            <input type="password" id="login-pass" required placeholder="Enter your password"
+                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+                        <div id="login-error" class="hidden text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800"></div>
+                        <button type="submit" id="login-btn"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 active:scale-[0.98]">
+                            Sign In
+                        </button>
+                    </form>
+                    <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                        Don't have an account? <a href="#" onclick="toggleAuthForm()" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Create one</a>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-400">
+                        Admin: <code class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">admin / admin123</code>
+                    </div>
+                </div>
+
+                <div id="register-form-container" class="hidden p-8 transition-transform duration-300 transform translate-x-full col-start-1 row-start-1">
+                    <form id="register-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                            <input type="text" id="reg-id" required placeholder="e.g. 2021001"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                            <input type="text" id="reg-name" required placeholder="e.g. John Doe"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GSuite Email</label>
+                            <input type="email" id="reg-email" required placeholder="e.g. john@syncup.com"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                            <input type="text" id="reg-dept" required placeholder="e.g. Computer Science"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                            <input type="password" id="reg-pass" required placeholder="Create a password"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div id="register-error" class="hidden text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800"></div>
+                        <button type="submit" id="register-btn"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-blue-500/25 active:scale-[0.98]">
+                            Create Account
+                        </button>
+                    </form>
+                    <div class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                        Already have an account? <a href="#" onclick="toggleAuthForm()" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Sign in</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-shell" class="hidden h-screen flex overflow-hidden">
+
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 transition-colors duration-200">
+            <a href="index.html" class="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="book-open" class="text-blue-600 dark:text-blue-400 mr-2"></i>
+                <span class="text-xl font-bold tracking-tight text-gray-800 dark:text-white">SyncUP</span>
+            </a>
+            <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3" id="sidebar-nav"></nav>
+            <div class="p-3 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="handleLogout()" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <i data-lucide="log-out" class="w-5 h-5 mr-3"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 transition-colors duration-200 flex-shrink-0">
+                <h1 class="text-2xl font-semibold text-gray-800 dark:text-white" id="page-title">Dashboard</h1>
+                <div class="flex items-center space-x-3">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors">
+                        <i data-lucide="moon" id="theme-icon-dark" class="hidden"></i>
+                        <i data-lucide="sun" id="theme-icon-light" class="hidden"></i>
+                    </button>
+                    <div class="relative">
+                        <button id="user-menu-btn" class="flex items-center space-x-2 pl-3 pr-2 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600">
+                            <div class="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm" id="user-avatar">A</div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[120px] truncate" id="user-display-name">Admin</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </button>
+                        <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                                <p class="font-semibold text-gray-900 dark:text-white" id="dropdown-name">Admin</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" id="dropdown-email">admin@syncup.com</p>
+                                <span class="mt-1 inline-block px-2 py-0.5 text-xs font-bold rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" id="dropdown-role">Admin</span>
+                            </div>
+                            <button onclick="openProfileEditor()" class="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors">
+                                <i data-lucide="settings" class="w-4 h-4 mr-3"></i> Edit Profile
+                            </button>
+                            <button onclick="handleLogout()" class="w-full text-left px-5 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors border-t border-gray-200 dark:border-gray-700">
+                                <i data-lucide="log-out" class="w-4 h-4 mr-3"></i> Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6 relative" id="main-content">
+                <div id="loader" class="absolute inset-0 flex justify-center items-center bg-gray-50 dark:bg-gray-900 bg-opacity-75 z-10 hidden">
+                    <i data-lucide="loader-2" class="animate-spin text-blue-600 w-10 h-10"></i>
+                </div>
+                <div id="app-view"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="fixed inset-0 bg-gray-900/80 hidden flex items-center justify-center z-[100]">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit Your Profile</h3>
+                <button onclick="document.getElementById('profile-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="profile-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                    <input type="text" id="profile-id" disabled class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                    <input type="text" id="profile-name" name="name" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GSuite Email</label>
+                    <input type="email" id="profile-email" name="gsuite_email" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                    <input type="text" id="profile-dept" name="department" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password <span class="text-gray-400 font-normal">(leave blank to keep current)</span></label>
+                    <input type="password" id="profile-password" name="new_password" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

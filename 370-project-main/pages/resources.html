@@ -1,0 +1,255 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Resource Library</h2>
+        <button onclick="openUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/20 transition-all flex items-center">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Upload Resource
+        </button>
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="loadResources('join')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center" title="View with Uploader">
+            <i data-lucide="user-check" class="w-4 h-4 mr-2"></i> View with Uploader
+        </button>
+
+        <button onclick="loadResources('all')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center">
+            <i data-lucide="folder-open" class="w-4 h-4 mr-2"></i> All Resources
+        </button>
+        <div class="flex items-center gap-2">
+            <div class="relative group">
+                <select id="my-groups-filter-res" onchange="globalGroupIdFilter=this.value; loadResources('nested', this.value)" 
+                    class="appearance-none pl-10 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all cursor-pointer min-w-[220px]">
+                    <option value="">Filter by My Groups...</option>
+                </select>
+                <i data-lucide="users" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors pointer-events-none"></i>
+            </div>
+            <button onclick="globalGroupIdFilter=null; document.getElementById('my-groups-filter-res').value=''; loadResources('all')" 
+                class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div id="no-groups-warning" class="hidden p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-center text-yellow-800 dark:text-yellow-400 text-sm">
+        <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i>
+        <span>You haven't joined any groups yet. <a href="javascript:loadPage('groups')" class="underline font-bold">Find a group here</a> to see group-specific resources.</span>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Title</th>
+                        <th class="px-6 py-3">Type</th>
+                        <th class="px-6 py-3">URL</th>
+                        <th class="px-6 py-3">Uploader</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="resource-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="add-resource-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Upload Resource</h3>
+            <button onclick="document.getElementById('add-resource-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form onsubmit="handleFormSubmit(event, '/api/resource/create.php', () => { document.getElementById('add-resource-modal').classList.add('hidden'); loadResources(); })" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <select name="type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="PDF">PDF</option>
+                    <option value="Video">Video</option>
+                    <option value="Document">Document</option>
+                    <option value="Image">Image</option>
+                    <option value="Link">Link</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL Path</label>
+                <input type="text" name="url_path" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Group</label>
+                <div class="relative group">
+                    <select name="group_id" id="upload-resource-group" required 
+                        class="appearance-none w-full pl-10 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer">
+                        <option value="">Choose a group...</option>
+                    </select>
+                    <i data-lucide="users" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors pointer-events-none"></i>
+                </div>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('add-resource-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function loadResources(type = 'all', filter = '') {
+    const list = document.getElementById('resource-list');
+    
+    if (globalGroupIdFilter && type === 'all') {
+        type = 'nested';
+        filter = globalGroupIdFilter;
+    }
+
+    await populateMyGroupsDropdown('my-groups-filter-res', filter);
+
+    const warning = document.getElementById('no-groups-warning');
+    if (warning) {
+        if (!currentUser || !currentUser.enrolled_groups || currentUser.enrolled_groups.length === 0) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+
+    const head = document.getElementById('table-head');
+    list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/resource/read.php?type=${type}&filter=${filter}`);
+    
+    if (data.success) {
+        const isSystemAdmin = currentUser && currentUser.role === 'Admin';
+        const hasAnyGroup = currentUser && currentUser.enrolled_groups && currentUser.enrolled_groups.length > 0;
+        
+        const uploadBtn = document.querySelector('button[onclick*="openUploadModal"]');
+        if (uploadBtn) {
+            if (isSystemAdmin || hasAnyGroup) uploadBtn.classList.remove('hidden');
+            else uploadBtn.classList.add('hidden');
+        }
+
+        if (type === 'join') {
+            head.innerHTML = `
+                <th class="px-6 py-3">ID</th>
+                <th class="px-6 py-3">Title</th>
+                <th class="px-6 py-3">Type</th>
+                <th class="px-6 py-3">URL</th>
+                <th class="px-6 py-3">Group</th>
+                <th class="px-6 py-3">Uploader</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(r => {
+                const canManage = isGroupAdmin(r.group_id);
+                return `
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4">${r.resource_id}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${r.title}</td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">${r.type}</span></td>
+                        <td class="px-6 py-4">
+                            <a href="${r.url_path}" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                                <i data-lucide="eye" class="w-4 h-4 mr-1"></i> View
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400 font-medium">${r.group_name || 'N/A'}</td>
+                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${r.uploader_name || 'Unknown'}</td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            ${canManage ? `
+                                <button onclick="promptUpdateTitle('${r.resource_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Edit Title"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                <button onclick="promptUpdateUrl('${r.resource_id}')" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300" title="Edit URL"><i data-lucide="link" class="w-4 h-4"></i></button>
+                                <button onclick="deleteResource('${r.resource_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            ` : '<span class="text-xs text-gray-400 italic">View Only</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No resources found</td></tr>';
+        } else {
+            head.innerHTML = `
+                <th class="px-6 py-3">ID</th>
+                <th class="px-6 py-3">Title</th>
+                <th class="px-6 py-3">Type</th>
+                <th class="px-6 py-3">URL</th>
+                <th class="px-6 py-3">Group</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(r => {
+                const canManage = isGroupAdmin(r.group_id);
+                return `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4">${r.resource_id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${r.title}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">${r.type}</span></td>
+                    <td class="px-6 py-4">
+                        <a href="${r.url_path}" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                            <i data-lucide="eye" class="w-4 h-4 mr-1"></i> View
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${r.group_name || 'N/A'}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        ${canManage ? `
+                            <button onclick="promptUpdateTitle('${r.resource_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Edit Title"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                            <button onclick="promptUpdateUrl('${r.resource_id}')" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300" title="Edit URL"><i data-lucide="link" class="w-4 h-4"></i></button>
+                            <button onclick="deleteResource('${r.resource_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        ` : '<span class="text-xs text-gray-400 italic">View Only</span>'}
+                    </td>
+                </tr>
+            `}).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No resources found</td></tr>';
+    }
+    lucide.createIcons();
+} else {
+    showToast(data.message, 'error');
+}
+}
+
+async function openUploadModal() {
+    const modal = document.getElementById('add-resource-modal');
+    modal.classList.remove('hidden');
+    await populateMyGroupsDropdown('upload-resource-group');
+}
+
+async function promptUpdateTitle(id) {
+    const title = await customPrompt("Enter new title:");
+    if (!title) return;
+
+    const formData = new FormData();
+    formData.append('resource_id', id);
+    formData.append('title', title);
+
+    const data = await apiCall('/api/resource/update.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadResources(); }
+    else showToast(data.message, 'error');
+}
+
+async function promptUpdateUrl(id) {
+    const url = await customPrompt("Enter new URL:");
+    if (!url) return;
+
+    const formData = new FormData();
+    formData.append('resource_id', id);
+    formData.append('url_path', url);
+
+    const data = await apiCall('/api/resource/update.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadResources(); }
+    else showToast(data.message, 'error');
+}
+
+async function deleteResource(id) {
+    if (!await customConfirm('Are you sure you want to delete this resource?')) return;
+    const formData = new FormData();
+    formData.append('resource_id', id);
+    const data = await apiCall('/api/resource/delete.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadResources(); }
+    else showToast(data.message, 'error');
+}
+
+loadResources();
+</script>

@@ -1,0 +1,171 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Student Management</h2>
+        <button onclick="document.getElementById('add-student-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Add Student
+        </button>
+    </div>
+
+    <div class="flex flex-wrap gap-4">
+        <button onclick="loadStudents('all')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            All Students
+        </button>
+        <button onclick="loadStudents('join')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center">
+            <i data-lucide="link" class="w-4 h-4 mr-2"></i> Students with Groups
+        </button>
+        <button onclick="loadStudents('nested')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center">
+            <i data-lucide="users" class="w-4 h-4 mr-2"></i> Find Classmates
+        </button>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Name</th>
+                        <th class="px-6 py-3">Department</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="add-student-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add New Student</h3>
+            <button onclick="document.getElementById('add-student-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form onsubmit="handleFormSubmit(event, '/api/student/create.php', () => { document.getElementById('add-student-modal').classList.add('hidden'); loadStudents('all'); })" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                <input type="text" name="student_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GSuite Email</label>
+                <input type="email" name="gsuite_email" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                <input type="text" name="department" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('add-student-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors">Save Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function loadStudents(type = 'all', filter_id = '') {
+    const list = document.getElementById('student-list');
+    const head = document.getElementById('table-head');
+    list.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/student/read.php?type=${type}&student_id=${filter_id}`);
+    
+    if (data.success) {
+        const isAdmin = currentUser && currentUser.role === 'Admin';
+        
+        const addBtn = document.querySelector('button[onclick*="add-student-modal"]');
+        if (addBtn && !isAdmin) addBtn.classList.add('hidden');
+
+        if (type === 'join') {
+            head.innerHTML = `
+                <th class="px-6 py-3">Student Name</th>
+                <th class="px-6 py-3">Group Name</th>
+            `;
+            list.innerHTML = data.data.map(s => `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${s.name}</td>
+                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${s.group_name}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="2" class="px-6 py-4 text-center">No data found</td></tr>';
+        } else {
+            head.innerHTML = `
+                <th class="px-6 py-3">ID</th>
+                <th class="px-6 py-3">Name</th>
+                <th class="px-6 py-3">Department</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(s => `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${s.student_id}</td>
+                    <td class="px-6 py-4 text-gray-900 dark:text-gray-100">${s.name}</td>
+                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${s.department}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        ${isAdmin ? `
+                            <button onclick="promptUpdateDept('${s.student_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                            <button onclick="deleteStudent('${s.student_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        ` : '<span class="text-xs text-gray-400 italic">View Only</span>'}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No students found</td></tr>';
+            lucide.createIcons();
+        }
+    } else {
+        showToast(data.message, 'error');
+        list.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error loading data</td></tr>';
+    }
+}
+
+async function promptUpdateDept(id) {
+    const newDept = await customPrompt("Enter new department:");
+    if (!newDept) return;
+
+    const formData = new FormData();
+    formData.append('student_id', id);
+    formData.append('department', newDept);
+
+    const data = await apiCall('/api/student/update.php', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (data.success) {
+        showToast(data.message, 'success');
+        loadStudents('all');
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function deleteStudent(id) {
+    if (!await customConfirm('Are you sure you want to delete this student?')) return;
+
+    const formData = new FormData();
+    formData.append('student_id', id);
+
+    const data = await apiCall('/api/student/delete.php', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (data.success) {
+        showToast(data.message, 'success');
+        loadStudents('all');
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+loadStudents('all');
+</script>

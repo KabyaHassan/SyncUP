@@ -1,0 +1,114 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Attendance System</h2>
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="loadAttendance('join')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center" title="JOIN Query">
+            <i data-lucide="link" class="w-4 h-4 mr-2"></i> View with Names & Topics
+        </button>
+        <div class="flex items-center gap-2">
+            <select id="filter-topic" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-48">
+                <option value="">Select a Topic</option>
+            </select>
+            <button onclick="loadAttendance('nested', document.getElementById('filter-topic').value)" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center" title="Filter by Session Topic">
+                <i data-lucide="search" class="w-4 h-4 mr-2"></i> Filter by Topic
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">Student ID</th>
+                        <th class="px-6 py-3">Student Name</th>
+                        <th class="px-6 py-3">Session Topic</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3">Marked At</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadAttendance(type = 'join', filter = '') {
+    const list = document.getElementById('attendance-list');
+    const head = document.getElementById('table-head');
+    list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/attendance/read.php?type=${type}&filter=${encodeURIComponent(filter)}`);
+    
+    if (data.success) {
+        if (type === 'join' || type === 'nested') {
+            head.innerHTML = `
+                <th class="px-6 py-3">Student ID</th>
+                <th class="px-6 py-3">Student Name</th>
+                <th class="px-6 py-3">Session Topic</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3">Marked At</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(a => {
+                const canManage = isGroupAdmin(a.group_id);
+                return `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4">${a.student_id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${a.name}</td>
+                    <td class="px-6 py-4">${a.topic || 'N/A'}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs ${a.status==='Present'?'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400':'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">${a.status}</span></td>
+                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${a.marked_at}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        ${canManage ? `
+                            <button onclick="promptUpdateStatus('${a.attendance_id}', 'Present')" class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 rounded hover:bg-green-200 dark:hover:bg-green-800/50 text-xs font-medium transition-colors">Present</button>
+                            <button onclick="promptUpdateStatus('${a.attendance_id}', 'Absent')" class="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-800/50 text-xs font-medium transition-colors">Absent</button>
+                        ` : '<span class="text-xs text-gray-400 italic">View Only</span>'}
+                    </td>
+                </tr>
+            `}).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center">No attendance records found</td></tr>';
+        }
+        lucide.createIcons();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function promptUpdateStatus(id, newStatus) {
+    if (!await customConfirm(`Change status to ${newStatus}?`)) return;
+
+    const formData = new FormData();
+    formData.append('attendance_id', id);
+    formData.append('status', newStatus);
+
+    const data = await apiCall('/api/attendance/update.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadAttendance(); }
+    else showToast(data.message, 'error');
+}
+
+async function deleteAttendance(id) {
+    if (!await customConfirm('Are you sure you want to delete this record?')) return;
+    const formData = new FormData();
+    formData.append('attendance_id', id);
+    const data = await apiCall('/api/attendance/delete.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadAttendance(); }
+    else showToast(data.message, 'error');
+}
+
+async function loadTopics() {
+    const data = await apiCall('/api/session/topics.php');
+    if (data.success) {
+        const select = document.getElementById('filter-topic');
+        select.innerHTML = '<option value="">Select a Topic</option>' + data.data.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
+}
+
+loadTopics();
+loadAttendance();
+</script>

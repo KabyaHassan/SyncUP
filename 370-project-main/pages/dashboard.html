@@ -1,0 +1,67 @@
+<div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
+            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                <i data-lucide="users" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-students">--</h3>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
+            <div class="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
+                <i data-lucide="users-2" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Study Groups</p>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-groups">--</h3>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
+            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+                <i data-lucide="file-text" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Resources Shared</p>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-resources">--</h3>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
+            <div class="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">
+                <i data-lucide="calendar" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Study Sessions</p>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-sessions">--</h3>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+<script>
+async function loadStats() {
+    try {
+        const [students, groups, resources, sessions] = await Promise.all([
+            apiCall('/api/student/read.php?type=all'),
+            apiCall('/api/group/read.php?type=all'),
+            apiCall('/api/resource/read.php?type=all'),
+            apiCall('/api/session/read.php?type=all')
+        ]);
+        
+        if(students.success) document.getElementById('stat-students').innerText = students.data.length;
+        if(groups.success) document.getElementById('stat-groups').innerText = groups.data.length;
+        if(resources.success) document.getElementById('stat-resources').innerText = resources.data.length;
+        if(sessions.success) document.getElementById('stat-sessions').innerText = sessions.data.length;
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+loadStats();
+</script>

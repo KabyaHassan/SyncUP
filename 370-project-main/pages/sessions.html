@@ -1,0 +1,212 @@
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Study Sessions</h2>
+        <button onclick="openSessionModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/20 transition-all flex items-center">
+            <i data-lucide="calendar-plus" class="w-4 h-4 mr-2"></i> Schedule Session
+        </button>
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="loadSessions('join')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center" title="View with Group Names">
+            <i data-lucide="layout" class="w-4 h-4 mr-2"></i> View with Groups
+        </button>
+        <div class="flex items-center gap-2">
+            <select id="my-groups-filter-ses" onchange="globalGroupIdFilter=this.value; loadSessions('nested', this.value)" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Filter by My Groups...</option>
+            </select>
+            <button onclick="globalGroupIdFilter=null; document.getElementById('my-groups-filter-ses').value=''; loadSessions('all')" class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr id="table-head">
+                        <th class="px-6 py-3">Session Number</th>
+                        <th class="px-6 py-3">Topic</th>
+                        <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3">Duration</th>
+                        <th class="px-6 py-3">Group Name</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="session-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="add-session-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Create Study Session</h3>
+            <button onclick="document.getElementById('add-session-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form onsubmit="handleFormSubmit(event, '/api/session/create.php', () => { document.getElementById('add-session-modal').classList.add('hidden'); loadSessions(); })" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Group</label>
+                <select name="group_id" id="add-session-group" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="">Choose a group...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                <input type="date" name="session_date" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time</label>
+                <input type="time" name="session_time" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration (mins)</label>
+                <input type="number" name="duration" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Topic</label>
+                <input type="text" name="topic" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meeting Link</label>
+                <input type="url" name="platform_link" placeholder="https://meet.google.com/..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('add-session-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors">Save Session</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function loadSessions(type = 'all', filter = '') {
+    const list = document.getElementById('session-list');
+    const head = document.getElementById('table-head');
+    
+    if (globalGroupIdFilter && type === 'all') {
+        type = 'nested';
+        filter = globalGroupIdFilter;
+    }
+
+    await populateMyGroupsDropdown('my-groups-filter-ses', filter);
+
+    list.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i data-lucide="loader-2" class="animate-spin w-6 h-6 mx-auto"></i></td></tr>';
+    lucide.createIcons();
+
+    const data = await apiCall(`/api/session/read.php?type=${type}&filter=${filter}`);
+    
+    if (data.success) {
+        const isSystemAdmin = currentUser && currentUser.role === 'Admin';
+        const hasAnyGroup = currentUser && currentUser.enrolled_groups && currentUser.enrolled_groups.length > 0;
+        
+        const createBtn = document.querySelector('button[onclick*="openSessionModal"]');
+        if (createBtn) {
+            if (isSystemAdmin || hasAnyGroup) createBtn.classList.remove('hidden');
+            else createBtn.classList.add('hidden');
+        }
+
+        if (type === 'join') {
+            head.innerHTML = `
+                <th class="px-6 py-3">Session Number</th>
+                <th class="px-6 py-3">Topic</th>
+                <th class="px-6 py-3">Date</th>
+                <th class="px-6 py-3">Duration</th>
+                <th class="px-6 py-3">Meeting Link</th>
+                <th class="px-6 py-3">Group Name</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(s => {
+                const canManage = isGroupAdmin(s.group_id);
+                return `
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4">${s.session_number}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${s.topic}</td>
+                        <td class="px-6 py-4">${s.session_date}</td>
+                        <td class="px-6 py-4">${s.duration} mins</td>
+                        <td class="px-6 py-4">
+                            <a href="${s.platform_link}" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                                <i data-lucide="external-link" class="w-4 h-4 mr-1"></i> Join
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${s.group_name}</td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            ${canManage ? `
+                                <button onclick="promptUpdateSessionTopic('${s.session_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Edit Topic"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                <button onclick="deleteSession('${s.session_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            ` : '<span class="text-xs text-gray-400 italic">View Only</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center">No sessions found</td></tr>';
+        } else {
+            head.innerHTML = `
+                <th class="px-6 py-3">ID</th>
+                <th class="px-6 py-3">Topic</th>
+                <th class="px-6 py-3">Link</th>
+                <th class="px-6 py-3">Date</th>
+                <th class="px-6 py-3">Duration</th>
+                <th class="px-6 py-3">Group</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+            `;
+            list.innerHTML = data.data.map(s => {
+                const canManage = isGroupAdmin(s.group_id);
+                return `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4">${s.session_id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${s.topic}</td>
+                    <td class="px-6 py-4">
+                        <a href="${s.platform_link}" target="_blank" class="text-blue-600 hover:underline">Join</a>
+                    </td>
+                    <td class="px-6 py-4">${s.session_date}</td>
+                    <td class="px-6 py-4">${s.duration} mins</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${s.group_name || 'N/A'}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        ${canManage ? `
+                            <button onclick="promptUpdateSessionTopic('${s.session_id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                            <button onclick="deleteSession('${s.session_id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        ` : '<span class="text-xs text-gray-400 italic">View Only</span>'}
+                    </td>
+                </tr>
+            `}).join('') || '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No sessions found</td></tr>';
+        }
+        lucide.createIcons();
+    } else {
+        showToast(data.message, 'error');
+    }
+}
+
+async function openSessionModal() {
+    const modal = document.getElementById('add-session-modal');
+    modal.classList.remove('hidden');
+    await populateMyGroupsDropdown('add-session-group');
+}
+
+async function promptUpdateSessionTopic(id) {
+    const topic = await customPrompt("Enter new topic:");
+    if (!topic) return;
+
+    const formData = new FormData();
+    formData.append('session_id', id);
+    formData.append('topic', topic);
+
+    const data = await apiCall('/api/session/update.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadSessions(); }
+    else showToast(data.message, 'error');
+}
+
+async function deleteSession(id) {
+    if (!await customConfirm('Are you sure you want to delete this session?')) return;
+    const formData = new FormData();
+    formData.append('session_id', id);
+    const data = await apiCall('/api/session/delete.php', { method: 'POST', body: formData });
+    if (data.success) { showToast(data.message, 'success'); loadSessions(); }
+    else showToast(data.message, 'error');
+}
+
+loadSessions();
+</script>
